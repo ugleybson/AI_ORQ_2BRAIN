@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI_ORQ_2BRAIN — Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #222535;
+      --border: #2e3148;
+      --accent: #6c63ff;
+      --accent2: #00d4aa;
+      --hot: #ff4d6d;
+      --warm: #ffb347;
+      --cold: #4da6ff;
+      --text: #e2e4f0;
+      --text-muted: #7b7f9e;
+      --success: #00d4aa;
+      --error: #ff4d6d;
+      --radius: 10px;
+      --font: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; font-size: 1.1rem; font-weight: 700; }
+    .logo span { color: var(--accent); }
+    .status-badge {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.75rem; color: var(--text-muted);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--error); }
+    .dot.online { background: var(--success); }
+    .obsidian-badge {
+      font-size: 0.72rem; padding: 3px 8px;
+      border-radius: 20px; border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    .obsidian-badge.connected { color: var(--accent2); border-color: var(--accent2); }
+
+    /* ── Layout ── */
+    main { padding: 24px; }
+    .grid-top { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+
+    /* ── Stat Card ── */
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .stat-card h3 { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
+    .stat-card .value { font-size: 2rem; font-weight: 700; }
+    .stat-card .sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+
+    /* ── Tabs ── */
+    .tabs { display: flex; gap: 4px; margin-bottom: 20px; }
+    .tab {
+      padding: 8px 18px; border-radius: 6px; cursor: pointer;
+      font-size: 0.85rem; border: 1px solid transparent;
+      color: var(--text-muted); background: transparent;
+      transition: all 0.15s;
+    }
+    .tab.active { background: var(--accent); color: #fff; }
+    .tab:hover:not(.active) { border-color: var(--border); color: var(--text); }
+
+    /* ── Panel ── */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* ── Kanban ── */
+    .kanban { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .kanban-col {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .kanban-col-header {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 14px; font-size: 0.85rem; font-weight: 600;
+    }
+    .kanban-col-header .badge {
+      padding: 2px 8px; border-radius: 20px; font-size: 0.7rem; font-weight: 700;
+    }
+    .badge-hot { background: rgba(255,77,109,0.15); color: var(--hot); }
+    .badge-warm { background: rgba(255,179,71,0.15); color: var(--warm); }
+    .badge-cold { background: rgba(77,166,255,0.15); color: var(--cold); }
+
+    .lead-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .lead-card:hover { border-color: var(--accent); }
+    .lead-card h4 { font-size: 0.88rem; margin-bottom: 4px; }
+    .lead-card .company { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; }
+    .score-bar { height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; }
+    .score-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+    .score-text { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+
+    /* ── Form ── */
+    .form-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      max-width: 720px;
+    }
+    .form-card h2 { font-size: 1rem; margin-bottom: 20px; color: var(--text); }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group.full { grid-column: span 2; }
+    label { font-size: 0.75rem; color: var(--text-muted); }
+    input, select, textarea {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 8px 10px;
+      font-size: 0.85rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+    .checkbox-group { display: flex; align-items: center; gap: 8px; }
+    .checkbox-group input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); }
+    .checkbox-group label { font-size: 0.82rem; color: var(--text); }
+    .form-actions { margin-top: 20px; display: flex; gap: 10px; }
+    .btn {
+      padding: 9px 20px; border-radius: 6px; cursor: pointer;
+      font-size: 0.85rem; font-weight: 600; border: none;
+      transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+
+    /* ── Result ── */
+    .result-box {
+      margin-top: 20px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: none;
+    }
+    .result-box.show { display: block; }
+    .result-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .result-header .status { font-size: 0.78rem; padding: 3px 10px; border-radius: 20px; font-weight: 700; }
+    .status-ok { background: rgba(0,212,170,0.15); color: var(--success); }
+    .status-ko { background: rgba(255,77,109,0.15); color: var(--error); }
+    .result-score { font-size: 2.5rem; font-weight: 700; }
+    .result-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 14px; }
+    .result-item h5 { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; }
+    .result-item p { font-size: 0.85rem; }
+    .proposal-box {
+      margin-top: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px;
+      font-size: 0.8rem;
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .issues-list { list-style: none; margin-top: 8px; }
+    .issues-list li { font-size: 0.82rem; padding: 4px 0; color: var(--error); }
+    .issues-list li::before { content: "⚠ "; }
+    .rec-list li { color: var(--warm); }
+    .rec-list li::before { content: "→ "; }
+
+    /* ── Brain search ── */
+    .search-bar { display: flex; gap: 10px; margin-bottom: 16px; }
+    .search-bar input { flex: 1; }
+    .search-result {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    .search-result h4 { font-size: 0.82rem; color: var(--accent); margin-bottom: 6px; }
+    .search-result p { font-size: 0.78rem; color: var(--text-muted); }
+
+    /* ── Modal ── */
+    .modal-backdrop {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+      z-index: 100; align-items: center; justify-content: center;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: min(680px, 95vw);
+      max-height: 85vh;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 22px; border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .modal-header h2 { font-size: 1rem; }
+    .modal-close {
+      background: none; border: none; color: var(--text-muted);
+      font-size: 1.3rem; cursor: pointer; line-height: 1; padding: 2px 6px;
+    }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { padding: 22px; overflow-y: auto; flex: 1; }
+    .modal-field { margin-bottom: 14px; }
+    .modal-field label { display: block; font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+    .modal-field p { font-size: 0.88rem; }
+    .modal-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+    .modal-score { font-size: 2.2rem; font-weight: 700; }
+    .modal-tag {
+      display: inline-block; padding: 2px 10px; border-radius: 20px;
+      font-size: 0.72rem; font-weight: 700; margin-bottom: 14px;
+    }
+    .modal-md {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px;
+      font-size: 0.8rem; white-space: pre-wrap; line-height: 1.6;
+      max-height: 260px; overflow-y: auto;
+    }
+    .modal-section-title { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block; vertical-align: middle; margin-left: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 900px) {
+      .grid-top { grid-template-columns: 1fr 1fr; }
+      .kanban { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-group.full { grid-column: span 1; }
+      .result-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🧠 <span>AI_ORQ</span>_2BRAIN</div>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <div class="status-badge">
+      <span class="dot" id="apiDot"></span>
+      <span id="apiStatus">A conectar…</span>
+    </div>
+    <div class="obsidian-badge" id="obsidianBadge">Obsidian: —</div>
+  </div>
+</header>
+
+<main>
+  <!-- Stats -->
+  <div class="grid-top">
+    <div class="stat-card">
+      <h3>Total Leads</h3>
+      <div class="value" id="statTotal">—</div>
+      <div class="sub">No Second Brain</div>
+    </div>
+    <div class="stat-card">
+      <h3>Notas Obsidian</h3>
+      <div class="value" id="statNotes">—</div>
+      <div class="sub">Vault local</div>
+    </div>
+    <div class="stat-card">
+      <h3>API Local REST</h3>
+      <div class="value" id="statObsidian" style="font-size:1.2rem;margin-top:4px;">—</div>
+      <div class="sub">Plugin obsidian-local-rest-api</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('kanban', this)">Pipeline Kanban</button>
+    <button class="tab" onclick="switchTab('newlead', this)">Novo Lead</button>
+    <button class="tab" onclick="switchTab('brain', this)">Second Brain</button>
+  </div>
+
+  <!-- Panel: Kanban -->
+  <div class="panel active" id="panel-kanban">
+    <div class="kanban">
+      <div class="kanban-col">
+        <div class="kanban-col-header">
+          🔥 Hot <span class="badge badge-hot" id="cnt-hot">0</span>
+        </div>
+        <div id="col-hot"></div>
+      </div>
+      <div class="kanban-col">
+        <div class="kanban-col-header">
+          ☀️ Warm <span class="badge badge-warm" id="cnt-warm">0</span>
+        </div>
+        <div id="col-warm"></div>
+      </div>
+      <div class="kanban-col">
+        <div class="kanban-col-header">
+          ❄️ Cold <span class="badge badge-cold" id="cnt-cold">0</span>
+        </div>
+        <div id="col-cold"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel: Novo Lead -->
+  <div class="panel" id="panel-newlead">
+    <div class="form-card">
+      <h2>Registar Novo Lead</h2>
+      <form id="leadForm" onsubmit="submitLead(event)">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nome *</label>
+            <input type="text" name="name" required placeholder="João Silva" />
+          </div>
+          <div class="form-group">
+            <label>Empresa *</label>
+            <input type="text" name="company" required placeholder="ACME Lda" />
+          </div>
+          <div class="form-group">
+            <label>Setor *</label>
+            <select name="sector">
+              <option value="">Selecionar…</option>
+              <option value="contabilidade">Contabilidade</option>
+              <option value="consultoria">Consultoria</option>
+              <option value="jurídico">Jurídico</option>
+              <option value="financeiro">Financeiro</option>
+              <option value="saúde">Saúde</option>
+              <option value="tecnologia">Tecnologia</option>
+              <option value="rh">RH</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Email *</label>
+            <input type="email" name="email" required placeholder="joao@empresa.com" />
+          </div>
+          <div class="form-group">
+            <label>Telefone</label>
+            <input type="text" name="phone" placeholder="+351 910 000 000" />
+          </div>
+          <div class="form-group">
+            <label>Urgência (dias)</label>
+            <input type="number" name="urgency_days" value="90" min="1" max="365" />
+          </div>
+          <div class="form-group">
+            <label>Tempo de resposta (horas)</label>
+            <input type="number" name="response_time_hours" value="48" min="1" max="168" />
+          </div>
+          <div class="form-group">
+            <label>Origem</label>
+            <input type="text" name="source" placeholder="LinkedIn, referência, evento…" />
+          </div>
+
+          <div class="form-group full">
+            <label>Notas</label>
+            <textarea name="notes" rows="2" placeholder="Contexto adicional…"></textarea>
+          </div>
+
+          <div class="form-group full" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+            <div class="checkbox-group">
+              <input type="checkbox" name="revenue_over_1m" id="rev" />
+              <label for="rev">Faturamento &gt; 1M€</label>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" name="employees_over_10" id="emp" />
+              <label for="emp">+10 funcionários</label>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" name="has_clear_pain" id="pain" />
+              <label for="pain">Dor clara identificada</label>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" name="budget_confirmed" id="bud" />
+              <label for="bud">Orçamento confirmado</label>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" name="requested_proposal" id="prop" />
+              <label for="prop">Pediu proposta</label>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" name="referred_by_client" id="ref" />
+              <label for="ref">Referenciado por cliente</label>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" name="gdpr_consent" id="gdpr" />
+              <label for="gdpr">Consentimento RGPD/LGPD ✓</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="submitBtn">
+            Processar Lead
+          </button>
+          <button type="button" class="btn btn-outline" onclick="resetForm()">Limpar</button>
+        </div>
+      </form>
+
+      <div class="result-box" id="resultBox">
+        <div class="result-header">
+          <div>
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:2px;">Resultado</div>
+            <div class="result-score" id="resScore">—</div>
+          </div>
+          <div>
+            <div class="status" id="resStatus"></div>
+            <div style="font-size:0.82rem;margin-top:6px;" id="resClassification"></div>
+          </div>
+        </div>
+        <div class="result-grid">
+          <div class="result-item">
+            <h5>Empresa</h5>
+            <p id="resBreakdown_empresa">—</p>
+          </div>
+          <div class="result-item">
+            <h5>Necessidade</h5>
+            <p id="resBreakdown_necessidade">—</p>
+          </div>
+          <div class="result-item">
+            <h5>Engajamento</h5>
+            <p id="resBreakdown_engajamento">—</p>
+          </div>
+        </div>
+        <div style="margin-top:12px;">
+          <div id="resRecommendation" style="font-size:0.82rem;color:var(--text-muted);"></div>
+        </div>
+        <div id="resIssues" style="display:none;margin-top:10px;">
+          <div style="font-size:0.78rem;color:var(--error);font-weight:600;">Problemas de compliance:</div>
+          <ul class="issues-list" id="issuesList"></ul>
+        </div>
+        <div id="resRecs" style="display:none;margin-top:8px;">
+          <div style="font-size:0.78rem;color:var(--warm);font-weight:600;">Recomendações:</div>
+          <ul class="issues-list rec-list" id="recsList"></ul>
+        </div>
+        <div id="resObsidian" style="margin-top:10px;font-size:0.75rem;color:var(--accent2);"></div>
+        <div id="resProposal" style="display:none;">
+          <div style="font-size:0.78rem;font-weight:600;margin:12px 0 6px;color:var(--success);">Proposta gerada (Hot Lead):</div>
+          <div class="proposal-box" id="proposalContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel: Second Brain -->
+  <div class="panel" id="panel-brain">
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Pesquisar no Second Brain (ex: scoring, proposta, RGPD)…" />
+      <button class="btn btn-primary" onclick="searchBrain()">Pesquisar</button>
+    </div>
+    <div id="searchResults"></div>
+  </div>
+</main>
+
+<!-- Modal detalhe do lead -->
+<div class="modal-backdrop" id="leadModal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle">—</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="modalLoading" style="color:var(--text-muted);text-align:center;padding:30px 0;">A carregar…</div>
+      <div id="modalContent" style="display:none;">
+        <div class="modal-grid">
+          <div class="modal-field">
+            <label>Score</label>
+            <div class="modal-score" id="mScore">—</div>
+          </div>
+          <div class="modal-field">
+            <label>Classificação</label>
+            <div id="mClass" class="modal-tag">—</div>
+          </div>
+          <div class="modal-field">
+            <label>Fase</label>
+            <p id="mPhase">—</p>
+          </div>
+        </div>
+        <div class="modal-grid">
+          <div class="modal-field">
+            <label>Empresa</label>
+            <p id="mCompany">—</p>
+          </div>
+          <div class="modal-field">
+            <label>Setor</label>
+            <p id="mSector">—</p>
+          </div>
+          <div class="modal-field">
+            <label>Criado</label>
+            <p id="mCreated">—</p>
+          </div>
+        </div>
+        <div class="modal-field">
+          <label>Email</label>
+          <p id="mEmail">—</p>
+        </div>
+        <div class="modal-field" style="margin-top:16px;">
+          <div class="modal-section-title">Nota completa (Obsidian)</div>
+          <div class="modal-md" id="mRaw">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API = '';  // mesma origem
+
+  // ── Boot ───────────────────────────────────────────────────────────────────
+  async function boot() {
+    try {
+      const r = await fetch(`${API}/api/status`);
+      const data = await r.json();
+      document.getElementById('apiDot').classList.add('online');
+      document.getElementById('apiStatus').textContent = 'API online';
+
+      const sb = data.second_brain;
+      document.getElementById('statNotes').textContent = sb.notes_count ?? '—';
+      const obsEl = document.getElementById('statObsidian');
+      const badge = document.getElementById('obsidianBadge');
+      if (sb.obsidian_api) {
+        obsEl.textContent = 'Conectado';
+        obsEl.style.color = 'var(--success)';
+        badge.textContent = 'Obsidian: API ✓';
+        badge.classList.add('connected');
+      } else {
+        obsEl.textContent = 'Ficheiros locais';
+        obsEl.style.color = 'var(--warm)';
+        badge.textContent = 'Obsidian: vault local';
+      }
+    } catch {
+      document.getElementById('apiStatus').textContent = 'API offline';
+    }
+    loadLeads();
+  }
+
+  // ── Kanban ─────────────────────────────────────────────────────────────────
+  async function loadLeads() {
+    try {
+      const r = await fetch(`${API}/api/leads`);
+      const data = await r.json();
+      document.getElementById('statTotal').textContent = data.total;
+
+      const cols = { Hot: [], Warm: [], Cold: [] };
+
+      for (const lead of data.leads) {
+        const meta = lead.metadata || {};
+        const cls = meta.score >= 80 ? 'Hot' : meta.score >= 50 ? 'Warm' : 'Cold';
+        const key = meta.status === 'Hot' ? 'Hot'
+                  : meta.status === 'Warm' ? 'Warm'
+                  : (parseInt(meta.score) >= 80 ? 'Hot' : parseInt(meta.score) >= 50 ? 'Warm' : 'Cold');
+        cols[key]?.push({ ...meta, file: lead.file, preview: lead.preview });
+      }
+
+      renderCol('hot', cols.Hot, 'hot');
+      renderCol('warm', cols.Warm, 'warm');
+      renderCol('cold', cols.Cold, 'cold');
+    } catch { /* API offline, cols stay empty */ }
+  }
+
+  function renderCol(id, items, cls) {
+    const col = document.getElementById(`col-${id}`);
+    const cnt = document.getElementById(`cnt-${id}`);
+    cnt.textContent = items.length;
+    col.innerHTML = items.length === 0
+      ? `<div style="color:var(--text-muted);font-size:0.78rem;text-align:center;padding:20px 0;">Sem leads</div>`
+      : items.map(i => cardHTML(i, cls)).join('');
+  }
+
+  function cardHTML(item, cls) {
+    const score = parseInt(item.score) || 0;
+    const colors = { hot: 'var(--hot)', warm: 'var(--warm)', cold: 'var(--cold)' };
+    const slug = item.file?.replace('clients/', '').replace('.md', '') || '';
+    const label = slug.replace(/_/g, ' ') || '—';
+    return `<div class="lead-card" onclick="openLead('${slug}', '${cls}')">
+      <h4>${label}</h4>
+      <div class="company">${item.company || '—'} · ${item.sector || '—'}</div>
+      <div class="score-bar">
+        <div class="score-bar-fill" style="width:${score}%;background:${colors[cls]};"></div>
+      </div>
+      <div class="score-text">${score}/100 · ${item.status || '—'}</div>
+    </div>`;
+  }
+
+  // ── Modal lead ─────────────────────────────────────────────────────────────
+  const CLS_COLORS = { hot: 'var(--hot)', warm: 'var(--warm)', cold: 'var(--cold)' };
+  const CLS_BG    = { hot: 'rgba(255,77,109,0.15)', warm: 'rgba(255,179,71,0.15)', cold: 'rgba(77,166,255,0.15)' };
+
+  async function openLead(slug, cls) {
+    const modal = document.getElementById('leadModal');
+    modal.classList.add('open');
+    document.getElementById('modalLoading').style.display = 'block';
+    document.getElementById('modalContent').style.display = 'none';
+    document.getElementById('modalTitle').textContent = slug.replace(/_/g, ' ');
+
+    try {
+      const r = await fetch(`${API}/api/lead/${slug}`);
+      if (!r.ok) throw new Error('not found');
+      const data = await r.json();
+      const m = data.metadata || {};
+      const body = data.content || '';
+      // helper: extrai campo do corpo se não estiver no frontmatter
+      const fromBody = (label) => {
+        const match = body.match(new RegExp(`\\*\\*${label}\\*\\*:\\s*(.+)`));
+        return match ? match[1].trim() : '—';
+      };
+
+      const score = parseInt(m.score) || 0;
+      document.getElementById('mScore').textContent = `${score}/100`;
+      document.getElementById('mScore').style.color = CLS_COLORS[cls] || 'var(--text)';
+
+      const clsLabel = m.classification || (score >= 80 ? 'Hot' : score >= 50 ? 'Warm' : 'Cold');
+      const clsEl = document.getElementById('mClass');
+      clsEl.textContent = clsLabel;
+      clsEl.style.background = CLS_BG[cls] || '';
+      clsEl.style.color = CLS_COLORS[cls] || 'var(--text)';
+
+      document.getElementById('mPhase').textContent   = m.phase    || fromBody('Fase')    || '—';
+      document.getElementById('mCompany').textContent = m.company  || fromBody('Empresa') || '—';
+      document.getElementById('mSector').textContent  = m.sector   || fromBody('Setor')   || '—';
+      document.getElementById('mCreated').textContent = m.created  || '—';
+      document.getElementById('mEmail').textContent   = m.email    || fromBody('Email')   || '—';
+      document.getElementById('mRaw').textContent     = body || '—';
+
+      document.getElementById('modalLoading').style.display = 'none';
+      document.getElementById('modalContent').style.display = 'block';
+    } catch {
+      document.getElementById('modalLoading').textContent = 'Erro ao carregar lead.';
+    }
+  }
+
+  function closeModal(e) {
+    if (e && e.target !== document.getElementById('leadModal')) return;
+    document.getElementById('leadModal').classList.remove('open');
+  }
+
+  // ── Lead Form ──────────────────────────────────────────────────────────────
+  async function submitLead(e) {
+    e.preventDefault();
+    const form = e.target;
+    const btn = document.getElementById('submitBtn');
+    btn.innerHTML = 'A processar… <span class="spinner"></span>';
+    btn.disabled = true;
+
+    const fd = new FormData(form);
+    const payload = {};
+    for (const [k, v] of fd.entries()) {
+      if (['revenue_over_1m','employees_over_10','has_clear_pain','budget_confirmed',
+           'requested_proposal','referred_by_client','gdpr_consent'].includes(k)) {
+        payload[k] = true;
+      } else if (['urgency_days','response_time_hours'].includes(k)) {
+        payload[k] = parseInt(v);
+      } else {
+        payload[k] = v;
+      }
+    }
+    // checkboxes não marcados → false
+    for (const cb of ['revenue_over_1m','employees_over_10','has_clear_pain','budget_confirmed',
+                      'requested_proposal','referred_by_client','gdpr_consent']) {
+      if (!(cb in payload)) payload[cb] = false;
+    }
+
+    try {
+      const r = await fetch(`${API}/api/lead`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await r.json();
+      showResult(data);
+      loadLeads();
+    } catch (err) {
+      alert('Erro ao contactar API: ' + err.message);
+    } finally {
+      btn.innerHTML = 'Processar Lead';
+      btn.disabled = false;
+    }
+  }
+
+  function showResult(data) {
+    const box = document.getElementById('resultBox');
+    box.classList.add('show');
+
+    if (data.status === 'rejected') {
+      document.getElementById('resScore').textContent = '✗';
+      document.getElementById('resStatus').textContent = 'Rejeitado';
+      document.getElementById('resStatus').className = 'status status-ko';
+      document.getElementById('resClassification').textContent = 'Falhou validação de compliance';
+
+      const issuesEl = document.getElementById('resIssues');
+      const issuesList = document.getElementById('issuesList');
+      issuesList.innerHTML = (data.issues || []).map(i => `<li>${i}</li>`).join('');
+      issuesEl.style.display = 'block';
+
+      const recsEl = document.getElementById('resRecs');
+      const recsList = document.getElementById('recsList');
+      if (data.recommendations?.length) {
+        recsList.innerHTML = data.recommendations.map(r => `<li>${r}</li>`).join('');
+        recsEl.style.display = 'block';
+      }
+      return;
+    }
+
+    const s = data.score;
+    document.getElementById('resScore').textContent = `${s.total}/100`;
+    document.getElementById('resStatus').textContent = s.classification;
+    document.getElementById('resStatus').className = `status ${s.classification === 'Hot' ? 'status-ok' : 'status-ko'}`;
+    document.getElementById('resClassification').textContent = s.recommendation;
+    document.getElementById('resBreakdown_empresa').textContent = `${s.breakdown.empresa}/40 pts`;
+    document.getElementById('resBreakdown_necessidade').textContent = `${s.breakdown.necessidade}/30 pts`;
+    document.getElementById('resBreakdown_engajamento').textContent = `${s.breakdown.engajamento}/30 pts`;
+    document.getElementById('resRecommendation').textContent = '';
+    document.getElementById('resIssues').style.display = 'none';
+
+    if (data.compliance?.recommendations?.length) {
+      const recsEl = document.getElementById('resRecs');
+      const recsList = document.getElementById('recsList');
+      recsList.innerHTML = data.compliance.recommendations.map(r => `<li>${r}</li>`).join('');
+      recsEl.style.display = 'block';
+    }
+
+    if (data.obsidian_note) {
+      document.getElementById('resObsidian').textContent = `Obsidian: ${data.obsidian_note}`;
+    }
+
+    if (data.proposal) {
+      document.getElementById('resProposal').style.display = 'block';
+      document.getElementById('proposalContent').textContent = data.proposal;
+    } else {
+      document.getElementById('resProposal').style.display = 'none';
+    }
+  }
+
+  function resetForm() {
+    document.getElementById('leadForm').reset();
+    document.getElementById('resultBox').classList.remove('show');
+  }
+
+  // ── Brain Search ───────────────────────────────────────────────────────────
+  async function searchBrain() {
+    const q = document.getElementById('searchInput').value.trim();
+    if (!q) return;
+    const container = document.getElementById('searchResults');
+    container.innerHTML = '<div style="color:var(--text-muted)">A pesquisar…</div>';
+    try {
+      const r = await fetch(`${API}/api/brain/search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: q }),
+      });
+      const data = await r.json();
+      if (!data.results.length) {
+        container.innerHTML = '<div style="color:var(--text-muted)">Sem resultados.</div>';
+        return;
+      }
+      container.innerHTML = data.results.map(r => `
+        <div class="search-result">
+          <h4>${r.file}</h4>
+          <p>${r.snippet}</p>
+        </div>`).join('');
+    } catch {
+      container.innerHTML = '<div style="color:var(--error)">Erro ao pesquisar.</div>';
+    }
+  }
+
+  document.getElementById('searchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') searchBrain();
+  });
+
+  // ── Tabs ───────────────────────────────────────────────────────────────────
+  function switchTab(name, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById(`panel-${name}`).classList.add('active');
+  }
+
+  boot();
+</script>
+</body>
+</html>
